@@ -7,7 +7,7 @@ router.use('/add-product',(req,res,next)=>{
 
 router.post('/product',( req,res,next)=>{      // works same as use method , but if we go to /product , it wont redirect
     console.log(req.body);
-    res.redirect('/');
+    res.redirect('/')
 })
 
-module.exports = router
+module.exports = router 

@@ -6,5 +6,4 @@ const router = express.Router()
 router.get('/',(req,res,next)=>{
     res.send('<h1> Hello to Express </h1>')   
 })
-
 module.exports = router
