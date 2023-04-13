@@ -1,15 +1,8 @@
-const  path = require('path')
+
 const express = require('express')
-const rootDir = require('../util/path')
 const router = express.Router()
+const importContact = require('../controllers/contactUsController')
+router.use('/contact',importContact.useContactController)
 
-router.use('/contact',(req,res,next)=>{
-    res.sendFile(path.join(rootDir, 'views', 'contact.html'))   
-})
-
-router.post('/success',( req,res,next)=>{  
-   // console.log('post od contact us is working')
-    res.redirect('/success');
-   
-})
+router.post('/success',importContact.postContactController)
 module.exports = router
