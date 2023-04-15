@@ -1,14 +1,16 @@
-const  path = require('path')
+const path = require('path');
+const rootDir = require('../util/path');
+const Product = require('../models/product');
 
-const rootDir = require('../util/path')
+const getAdminControllers = (req, res, next) => {
+  res.sendFile(path.join(rootDir, 'views', 'add-product.html'));
+};
 
-const getAdminControllers=(req,res,next)=>{
-    res.sendFile(path.join(rootDir, 'views', 'add-product.html'))   
-}
+const postAdminControllers = (req, res, next) => {
+  const { title } = req.body;
+  const product = new Product(title);
+  product.save();
+  res.redirect('/');
+};
 
-const postAdminControllers = ( req,res,next)=>{      
-    console.log(req.body);
-    res.redirect('/')
-}
-
-module.exports={getAdminControllers,postAdminControllers}
+module.exports = { getAdminControllers, postAdminControllers };
