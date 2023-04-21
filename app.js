@@ -2,96 +2,57 @@ const path = require('path');
 const fs = require('fs')
 const express = require('express');
 const bodyParser = require('body-parser');
-const cors = require('cors');
 
-// initialize express app
-const app = express();
-
-// import Sequelize ORM instance and model
+const errorController = require('./controllers/error');
 const sequelize = require('./util/database')
+const Product = require('./models/product')
 const User = require('./models/user')
 
-// set up middleware to parse incoming JSON request bodies
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended:true}))
+const app = express();
 
-// enable cross-origin resource sharing
-app.use(cors());
+app.set('view engine', 'ejs');
+app.set('views', 'views');
 
-app.get('/alluser', (req,res)=>{
-    User.findAll()
-    .then(users=>{
-        res.json(users)
+const adminRoutes = require('./routes/admin');
+const shopRoutes = require('./routes/shop');
+
+app.use(bodyParser.urlencoded({ extended: false }));  //middleware
+app.use(express.static(path.join(__dirname, 'public')));
+// adding this middleware , to store user in rquest, and can be used anywhere in the app
+app.use((req,res,next)=>{
+    User.findByPk(1)  //we will find user even we created user in sode afterwards because this will execute when server listens
+    .then(user=>{
+         req.user = user
+         next()
     })
     .catch(err=>console.log(err))
+})           
+
+app.use('/admin', adminRoutes);
+app.use(shopRoutes);
+app.use(errorController.get404);
+
+Product.belongsTo(User,{constraints: true, onDelete:'CASCADE' })  // talking about user created the product, not in regards to purchase
+// if user is deleted then cascade means it will execute on product, any product related to user will also b gone
+User.hasMany(Product)
+
+// sequelize.sync({force:true}) // on setting force-true , we are enabling hard overwite out db table since we have already created table
+// it emityout the table as it overwrite which is not a good way
+
+sequelize.sync()
+.then(()=>{
+   return User.findByPk(1)
 })
-
-app.get('/user',(req,res)=>{
-    res.sendFile(__dirname+'/curdOperations.html')
+.then((user)=>{
+    if(!user){
+       return User.create({
+            Name: 'abra ka dabra',Email: 'abra_ka@dabra-mail.com' 
+        })
+    }return user
 })
+// .then(user=>{
+//     //console.log(user);
+// })
+.catch(err=> console.log(err));
 
-app.post('/user', (req,res)=>{
-    const name = req.body.name;
-    const mobile = req.body.mobile;
-    const email = req.body.email;
-
-    User.create({
-        name: name,
-        mobile: mobile,
-        email: email
-    })
-    .then(() => {
-        res.redirect('/user')
-    })
-    .catch(err => 
-        console.log(err))
-    
-})
-
-//edit from database
-
-app.put('/users/:id', (req, res) => {
-    const id = req.params.id;
-    const { name, mobile, email } = req.body;
-    User.update({ name, mobile, email }, { where: { id } })
-      .then(() => {
-        res.sendStatus(200);
-      })
-      .catch(error => {
-        console.log(error);
-        res.sendStatus(500);
-      });
-  });
-
-// remove from database
-
-app.delete("/users/:id", (req, res) => {
-    const id = req.params.id;
-    User.findByPk(id)
-      .then(user => {
-        if (!user) {
-          return res.status(404).send("User not found");
-        }
-        user.destroy()
-          .then(() => {
-            res.send("User deleted successfully");
-          })
-          .catch(error => {
-            console.log(error);
-            res.status(500).send("Internal server error");
-          });
-      })
-      .catch(error => {
-        console.log(error);
-        res.status(500).send("Internal server error");
-      });
-  });
-
-sequelize.sync().then(()=>{
-    console.log('created product in db using sequeslize');
-}).catch(err=> console.log(err));
-
-// start the server
-app.listen(3000, () => {
-    console.log('setup on 3000 is done');
-    });
+app.listen(3000);
